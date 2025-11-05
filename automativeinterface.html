@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Colorful Automotive Dashboard — Demo</title>
+  <style>
+    :root{
+      --bg: linear-gradient(180deg,#091126 0%, #0f1724 60%);
+      --glass: rgba(255,255,255,0.06);
+      --accent: linear-gradient(90deg,#00d084,#00a3ff);
+      --neon: #00f0ff;
+      --danger: #ff4d6d;
+      --muted: rgba(255,255,255,0.6);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:#eaf6ff}
+    .container{
+      max-width:1200px;margin:24px auto;padding:18px;display:grid;grid-template-columns: 1fr 420px;gap:18px;align-items:start;
+    }
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));border-radius:14px;padding:16px;box-shadow:0 8px 30px rgba(2,6,23,0.6);backdrop-filter: blur(6px);}
+
+    /* Left big dashboard */
+    .dashboard{display:grid;grid-template-columns: 1fr 1fr;gap:12px}
+
+    /* Gauge base */
+    .gauge{position:relative;height:300px;border-radius:12px;padding:12px;background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);display:flex;align-items:center;justify-content:center}
+    .gauge svg{width:260px;height:260px;display:block}
+    .gauge .center{position:absolute;display:flex;flex-direction:column;align-items:center;font-weight:600}
+    .speed-number{font-size:44px;letter-spacing:1px}
+    .speed-unit{font-size:12px;color:var(--muted)}
+
+    .tach{height:150px}
+
+    /* Mini panels */
+    .panels{display:flex;gap:12px}
+    .panel{flex:1;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:10px;border-radius:10px}
+    .panel small{color:var(--muted)}
+
+    /* Right column */
+    .right{display:flex;flex-direction:column;gap:12px}
+    .media{display:flex;align-items:center;gap:12px}
+    .media .art{width:72px;height:72px;border-radius:8px;background:linear-gradient(135deg,#ffb88c,#ff7eb3);display:flex;align-items:center;justify-content:center;font-weight:700}
+    .media .meta{flex:1}
+
+    /* Controls */
+    .controls{display:flex;gap:10px;flex-wrap:wrap}
+    button.ctrl{padding:10px 12px;border-radius:10px;border:none;background:var(--glass);color:#eaf6ff;cursor:pointer;backdrop-filter: blur(6px);}
+    button.ctrl.active{background:linear-gradient(90deg,#00c686,#0ea8ff);color:#012}
+
+    /* Indicators */
+    .indicators{display:flex;gap:8px;align-items:center}
+    .indicator{width:46px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.02);font-size:12px}
+    .indicator.on{box-shadow:0 2px 10px rgba(0,180,255,0.16);background:linear-gradient(90deg,#002b62,#002b62);}
+
+    /* Map placeholder */
+    .map{height:200px;border-radius:10px;background:linear-gradient(180deg,#071020,#0a1320);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+
+    /* Gear */
+    .gear{font-size:54px;font-weight:800;letter-spacing:6px}
+
+    /* Footer small text */
+    .meta-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;color:var(--muted);font-size:13px}
+
+    /* Neon needles */\    
+    .needle{filter: drop-shadow(0 4px 8px rgba(0,200,255,0.12))}
+
+    /* Responsive */
+    @media (max-width:1000px){.container{grid-template-columns:1fr;}.right{order:2}.dashboard{grid-template-columns:1fr}}
+
+    /* Tiny flourish */
+    .brand{font-weight:700;color:var(--neon);letter-spacing:1px}
+
+    /* animated blinker */
+    @keyframes blink{0%{opacity:1}50%{opacity:0.15}100%{opacity:1}}
+    .blinking{animation:blink 0.9s linear infinite}
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div class="brand">AURORA DRIVE</div>
+          <div style="font-size:12px;color:var(--muted)">Concept dashboard • Interactive demo</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:700">Autonomy: <span style="color:#7df7c9">Level 2</span></div>
+          <div style="font-size:12px;color:var(--muted)">Status: <span id="status">Normal</span></div>
+        </div>
+      </div>
+
+      <div class="dashboard">
+        <!-- Speedometer -->
+        <div class="gauge">
+          <svg viewBox="0 0 220 220">
+            <defs>
+              <linearGradient id="g1" x1="0" x2="1">
+                <stop offset="0%" stop-color="#00f0ff"/>
+                <stop offset="100%" stop-color="#00d084"/>
+              </linearGradient>
+            </defs>
+            <circle cx="110" cy="110" r="90" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="12"/>
+            <!-- ticks -->
+            <g id="ticks">
+            </g>
+            <!-- arc for speed -->
+            <path id="speedArc" d="" stroke="url(#g1)" stroke-width="10" fill="none" stroke-linecap="round"/>
+            <!-- needle -->
+            <g id="needleGroup" class="needle">
+              <line x1="110" y1="110" x2="110" y2="25" stroke="#00f0ff" stroke-width="3" stroke-linecap="round" transform="rotate(-90 110 110)" id="needle"/>
+              <circle cx="110" cy="110" r="6" fill="#00f0ff"/>
+            </g>
+
+            <!-- numeric labels -->
+            <g id="labels" fill="#dff6ff" font-size="10"></g>
+          </svg>
+          <div class="center">
+            <div class="speed-number" id="speed">0</div>
+            <div class="speed-unit">km/h</div>
+          </div>
+        </div>
+
+        <!-- Right small cluster: tach + mini panels -->
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="panel">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><small>Engine RPM</small><div style="font-weight:700" id="rpm">0</div></div>
+              <div style="text-align:right"><small>Gear</small><div class="gear" id="gear">N</div></div>
+            </div>
+            <div class="tach" id="tachSVG"></div>
+            <div class="meta-row"><div>Temp: <strong id="temp">72°C</strong></div><div>Battery: <strong id="battery">12.6V</strong></div></div>
+          </div>
+
+          <div style="display:flex;gap:12px">
+            <div class="panel" style="flex:1">
+              <small>Fuel</small>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+                <div style="flex:1;background:rgba(255,255,255,0.02);border-radius:8px;height:12px;position:relative;overflow:hidden">
+                  <div id="fuelBar" style="height:100%;width:70%;background:linear-gradient(90deg,#ffd76b,#ff7b7b)"></div>
+                </div>
+                <div style="width:46px;text-align:right;font-weight:700" id="fuelText">70%</div>
+              </div>
+            </div>
+            <div class="panel" style="width:140px;display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center">
+              <div class="indicators" style="width:100%">
+                <div class="indicator" id="leftSignal">◀</div>
+                <div class="indicator" id="hazard">⚠</div>
+                <div class="indicator" id="rightSignal">▶</div>
+              </div>
+              <div style="font-size:12px;color:var(--muted)">Lights: <span id="lights">Off</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- lower row: map + controls -->
+      <div style="display:grid;grid-template-columns:1fr 260px;gap:12px;margin-top:12px">
+        <div class="map card" id="map">Mini Map (placeholder)</div>
+        <div class="card" style="padding:12px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-weight:700">Controls</div>
+            <div style="font-size:12px;color:var(--muted)">Interactive demo</div>
+          </div>
+
+          <div class="controls">
+            <button class="ctrl" id="btnAccel">Accelerate</button>
+            <button class="ctrl" id="btnBrake">Brake</button>
+            <button class="ctrl" id="btnToggleLights">Toggle Lights</button>
+            <button class="ctrl" id="btnLeft">Left</button>
+            <button class="ctrl" id="btnRight">Right</button>
+            <button class="ctrl" id="btnHazard">Hazard</button>
+            <button class="ctrl" id="btnPark">P</button>
+            <button class="ctrl" id="btnDrive">D</button>
+            <button class="ctrl" id="btnNeutral">N</button>
+            <button class="ctrl" id="btnReverse">R</button>
+          </div>
+
+          <div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:12px;color:var(--muted)">Odometer</div>
+            <div style="font-weight:700" id="odo">12458 km</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right column: media, trip summary, quick settings -->
+    <div class="right">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="art">AB</div>
+          <div class="meta">
+            <div style="font-weight:700">Now playing</div>
+            <div style="font-size:13px;color:var(--muted)">Aurora — City Lights</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button class="ctrl" id="play">▶</button>
+            <button class="ctrl" id="pause">⏸</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted)"><div>Trip</div><div>45 min</div></div>
+          <div style="height:8px;background:rgba(255,255,255,0.02);border-radius:8px;margin-top:8px;overflow:hidden"><div style="width:45%;height:100%;background:linear-gradient(90deg,#7ae7ff,#7df7c9)"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-weight:700">Trip Summary</div>
+          <div style="font-size:12px;color:var(--muted)">Today</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="panel"><small>Avg Speed</small><div style="font-weight:700">62 km/h</div></div>
+          <div class="panel"><small>Range</small><div style="font-weight:700">385 km</div></div>
+          <div class="panel"><small>Fuel Used</small><div style="font-weight:700">6.8 L</div></div>
+          <div class="panel"><small>Efficiency</small><div style="font-weight:700">18.2 km/L</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:8px">Quick Settings</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="ctrl" id="eco">Eco</button>
+          <button class="ctrl" id="sport">Sport</button>
+          <button class="ctrl" id="suspend">Auto-Park</button>
+          <button class="ctrl" id="climate">Climate</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Simple interactive behavior to demo the dashboard
+    const speedEl = document.getElementById('speed');
+    const rpmEl = document.getElementById('rpm');
+    const gearEl = document.getElementById('gear');
+    const fuelBar = document.getElementById('fuelBar');
+    const fuelText = document.getElementById('fuelText');
+    const leftSignal = document.getElementById('leftSignal');
+    const rightSignal = document.getElementById('rightSignal');
+    const hazard = document.getElementById('hazard');
+    const lightsText = document.getElementById('lights');
+    const statusText = document.getElementById('status');
+
+    let speed = 0;
+    let rpm = 800;
+    let fuel = 70; // percent
+    let gear = 'N';
+    let lightsOn = false;
+    let leftOn = false, rightOn = false, hazOn = false;
+
+    function updateUI(){
+      speedEl.textContent = Math.round(speed);
+      rpmEl.textContent = Math.round(rpm);
+      gearEl.textContent = gear;
+      fuelBar.style.width = fuel + '%';
+      fuelText.textContent = fuel + '%';
+      document.getElementById('battery').textContent = (12.2 + (speed/300)).toFixed(1) + 'V';
+
+      // signals
+      leftSignal.classList.toggle('blinking', leftOn);
+      rightSignal.classList.toggle('blinking', rightOn);
+      hazard.classList.toggle('blinking', hazOn);
+      leftSignal.style.background = leftOn? 'linear-gradient(90deg,#00a3ff,#00d084)':'rgba(255,255,255,0.02)';
+      rightSignal.style.background = rightOn? 'linear-gradient(90deg,#00a3ff,#00d084)':'rgba(255,255,255,0.02)';
+      hazard.style.background = hazOn? 'linear-gradient(90deg,#ff7b7b,#ffd76b)':'rgba(255,255,255,0.02)';
+
+      // lights
+      lightsText.textContent = lightsOn? 'On' : 'Off';
+
+      // status
+      if(speed>120) statusText.textContent = 'Overspeed'; else statusText.textContent = 'Normal';
+
+      updateNeedle();
+      updateTach();
+    }
+
+    // Speed arc and needle calculations
+    function polarToCartesian(cx, cy, r, angleDeg){
+      const angleRad = (angleDeg-90) * Math.PI/180.0;
+      return {x: cx + r * Math.cos(angleRad), y: cy + r * Math.sin(angleRad)};
+    }
+    function describeArc(cx, cy, r, startAngle, endAngle){
+      const start = polarToCartesian(cx,cy,r,endAngle);
+      const end = polarToCartesian(cx,cy,r,startAngle);
+      const largeArc = endAngle - startAngle <= 180 ? '0' : '1';
+      return ['M',start.x,start.y,'A',r,r,0,largeArc,0,end.x,end.y].join(' ');
+    }
+
+    function updateNeedle(){
+      const maxSpeed = 220;
+      const angle = -120 + (speed/maxSpeed)*240; // -120 to 120
+      const needle = document.getElementById('needle');
+      needle.setAttribute('transform', `rotate(${angle} 110 110)`);
+      // arc
+      const arc = describeArc(110,110,84,-120, angle);
+      document.getElementById('speedArc').setAttribute('d', arc);
+    }
+
+    // Ticks and labels generation
+    (function makeTicks(){
+      const ticksG = document.querySelector('#ticks');
+      const labelsG = document.querySelector('#labels');
+      for(let i=0;i<=11;i++){
+        const val = i*20;
+        const angle = -120 + (i/11)*240;
+        const outer = polarToCartesian(110,110,92,angle);
+        const inner = polarToCartesian(110,110,78,angle);
+        const tick = document.createElementNS('http://www.w3.org/2000/svg','line');
+        tick.setAttribute('x1',outer.x);tick.setAttribute('y1',outer.y);tick.setAttribute('x2',inner.x);tick.setAttribute('y2',inner.y);
+        tick.setAttribute('stroke','rgba(255,255,255,0.12)');tick.setAttribute('stroke-width', i%3===0?2:1);
+        ticksG.appendChild(tick);
+
+        const labelPos = polarToCartesian(110,110,66,angle);
+        const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+        txt.setAttribute('x',labelPos.x);txt.setAttribute('y',labelPos.y+4);txt.setAttribute('text-anchor','middle');txt.textContent = val;
+        labelsG.appendChild(txt);
+      }
+    })();
+
+    // Tachometer simple svg
+    function updateTach(){
+      const svg = document.getElementById('tachSVG');
+      svg.innerHTML = '';
+      const max = 7000;
+      const pct = Math.min(1, rpm/max);
+      const w = 260; const h=60;
+      const barw = Math.round(pct*w);
+      svg.innerHTML = `\n        <div style="height:8px;background:rgba(255,255,255,0.03);border-radius:6px;overflow:hidden">\n          <div style=\"width:${barw}px;height:100%;background:linear-gradient(90deg,#ff7b7b,#ffd76b)\"></div>\n        </div>\n      `;
+    }
+
+    // Controls
+    document.getElementById('btnAccel').addEventListener('mousedown', () => accelInterval = setInterval(accel,100));
+    document.getElementById('btnAccel').addEventListener('mouseup', () => clearInterval(accelInterval));
+    document.getElementById('btnAccel').addEventListener('mouseleave', () => clearInterval(accelInterval));
+    document.getElementById('btnBrake').addEventListener('click', () => { speed = Math.max(0, speed-8); rpm = Math.max(700, rpm-600); updateUI(); });
+
+    function accel(){ speed = Math.min(240, speed + 2.5); rpm = Math.min(7000, rpm + 120); fuel = Math.max(0, fuel - 0.05); updateUI(); }
+    let accelInterval = null;
+
+    document.getElementById('btnToggleLights').addEventListener('click', () => { lightsOn = !lightsOn; updateUI(); });
+    document.getElementById('btnLeft').addEventListener('click', () => { leftOn = !leftOn; if(leftOn){ rightOn=false; hazOn=false;} updateUI(); });
+    document.getElementById('btnRight').addEventListener('click', () => { rightOn = !rightOn; if(rightOn){ leftOn=false; hazOn=false;} updateUI(); });
+    document.getElementById('btnHazard').addEventListener('click', () => { hazOn = !hazOn; if(hazOn){ leftOn = rightOn = false;} updateUI(); });
+
+    document.getElementById('btnPark').addEventListener('click', ()=>{gear='P'; speed=0; rpm=700; updateUI();});
+    document.getElementById('btnDrive').addEventListener('click', ()=>{gear='D'; updateUI();});
+    document.getElementById('btnNeutral').addEventListener('click', ()=>{gear='N'; updateUI();});
+    document.getElementById('btnReverse').addEventListener('click', ()=>{gear='R'; updateUI();});
+
+    // small toggles
+    document.getElementById('eco').addEventListener('click', (e)=>{e.target.classList.toggle('active');});
+    document.getElementById('sport').addEventListener('click', (e)=>{e.target.classList.toggle('active');});
+
+    // simulated idle updates
+    setInterval(()=>{
+      if(!accelInterval){ speed = Math.max(0, speed - 0.08); rpm = Math.max(700, rpm - 10); fuel = Math.max(0, fuel - (speed>0?0.001:0)); }
+      updateUI();
+    },120);
+
+    // initial draw
+    updateUI();
+  </script>
+</body>
+</html>
